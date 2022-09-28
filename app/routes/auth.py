@@ -3,10 +3,13 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..schemas.users import RegistrationSchema
 from ..models.users import User
-from .utils import hash_password, create_access_token, verify_password
+from .utils import hash_password, create_access_token, verify_password, verify_access_token
 
 
-router = APIRouter(prefix='/api/auth')
+router = APIRouter(
+    prefix='/api/auth',
+    tags=['Authentication']
+    )
 
 
 @router.post('')
@@ -38,3 +41,17 @@ def user_login(request: RegistrationSchema, db: Session=Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials provied")
 
     return {"token":create_access_token({"email": user.email, "id":user.id})}
+
+
+@router.post('/verify-email/{token}', status_code=status.HTTP_200_OK)
+def verify_email(token, db: Session = Depends(get_db)):
+    payload = verify_access_token(token)
+
+    new_user = db.query(User).filter(User.email==payload['email'])
+
+    if not new_user.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
+    new_user.update({"is_active":True})
+    db.commit()
+    return {}
