@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
-import jwt
+import jwt, smtplib
 
 # for development purposes only
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
@@ -36,3 +36,10 @@ def verify_access_token(token):
         
     except:
         raise Exception
+
+
+# will be updated
+def sendEmail(user_email, message):
+    smtp = smtplib.SMTP("smtp.elasticemail.com", 2525)
+    smtp.login("user", "secret")
+    smtp.sendmail("from", [user_email], message)
