@@ -1,8 +1,9 @@
 from datetime import timedelta
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
 from ..database import get_db
-from ..schemas.users import RegistrationSchema, UserBase
+from ..schemas.users import RegistrationSchema, UserBase, ChangePasswordSchema, ReadUser
 from ..models.users import User
 from .utils import hash_password, create_access_token, verify_password, verify_access_token, sendEmail
 
@@ -11,6 +12,35 @@ router = APIRouter(
     prefix='/api/auth',
     tags=['Authentication']
     )
+
+oauth2_scheme = OAuth2PasswordBearer('login')
+
+def get_user(id:int, db: Session):
+    user = db.query(User).filter(User.id==id).first()
+    return user
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = verify_access_token(token)
+        
+        id: str = payload.get("id")
+        if id is None:
+            raise credentials_exception
+        
+        user = get_user(id, db)
+        if user is None:
+            raise credentials_exception
+            
+        return user
+        
+    except:
+        raise credentials_exception
 
 
 @router.post('')
@@ -72,3 +102,16 @@ def reset_password(request: UserBase, db:Session = Depends(get_db)):
         pass
 
     return {"data": "Email will be sent, if specified email is valid"}
+
+
+@router.post('/password/change', status_code=status.HTTP_200_OK)
+def change_password(passwords:ChangePasswordSchema, user: ReadUser = Depends(get_current_user), db:Session=Depends(get_db)):
+    if passwords.password1 != passwords.password2:
+        raise HTTPException(status_code=400, detail="passwords do not match")
+
+    hashed_password = hash_password(passwords.password1)
+    
+    db.query(User).filter(User.id==user.id).update({"password": hashed_password})
+    db.commit()
+
+    return {}
