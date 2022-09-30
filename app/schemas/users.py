@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel
 
 class UserBase(BaseModel):
@@ -22,6 +23,8 @@ class ReadUser(UserBase):
     phone: str | None = None
     is_active: bool
     gender: str | None = None
+    following: List
+    followers: List
     
     class Config:
         orm_mode = True

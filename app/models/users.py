@@ -1,7 +1,14 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, Integer, DateTime
+from sqlalchemy import Column, ForeignKey, String, Boolean, Integer, DateTime, Table
 from sqlalchemy.types import DateTime
+from sqlalchemy.orm import relationship
 from ..database import Base
+
+user_following = Table(
+    'user_following', Base.metadata,
+    Column('followers', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('following', Integer, ForeignKey('users.id'), primary_key=True)
+)
 
 class User(Base):
     __tablename__ = 'users'
@@ -16,4 +23,10 @@ class User(Base):
     is_active = Column(Boolean, default=False, nullable=True)
     date_joined = Column(DateTime(timezone=True), default=datetime.utcnow())
 
+    following = relationship("User",
+        secondary=user_following,
+        primaryjoin=id==user_following.c.followers,
+        secondaryjoin=id==user_following.c.following,
+        backref="followers"
+        )
     
