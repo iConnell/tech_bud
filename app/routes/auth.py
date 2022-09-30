@@ -13,7 +13,7 @@ router = APIRouter(
     tags=['Authentication']
     )
 
-oauth2_scheme = OAuth2PasswordBearer('login')
+oauth2_scheme = OAuth2PasswordBearer('api/auth/login')
 
 def get_user(id:int, db: Session):
     user = db.query(User).filter(User.id==id).first()
@@ -78,12 +78,12 @@ def user_login(request: RegistrationSchema, db: Session=Depends(get_db)):
 def verify_email(token, db: Session = Depends(get_db)):
     payload = verify_access_token(token)
 
-    new_user = db.query(User).filter(User.email==payload['email'])
+    user = db.query(User).filter(User.email==payload['email'])
 
-    if not new_user.first():
+    if not user.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
-    new_user.update({"is_active":True})
+    user.update({"is_active":True})
     db.commit()
     return {}
 
