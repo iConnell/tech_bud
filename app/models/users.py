@@ -30,3 +30,4 @@ class User(Base):
         backref="followers"
         )
     
+    posts = relationship("Post", back_populates="post_author")
