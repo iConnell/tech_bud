@@ -37,3 +37,17 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"post with id {post_id} not found")
 
     return post
+
+@router.delete('/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Session = Depends(get_db), user: Session = Depends(get_current_user)):
+    post = db.query(Post).filter(Post.id==post_id)
+
+    if not post.first():
+        raise HTTPException(status_code=404, detail=f"post with id {post_id} not found")
+
+    if post.first().author == user.id:
+        raise HTTPException(status_code=401, detail=f"You do not have permission to perform this action")
+
+    post.delete(synchronize_session=False)
+    db.commit()
+    return {}
